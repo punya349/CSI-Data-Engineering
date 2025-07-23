@@ -1,0 +1,62 @@
+{
+  "name": "Pipeline_Threshold_Copy",
+  "properties": {
+    "activities": [
+      {
+        "name": "LookupThreshold",
+        "type": "Lookup",
+        "policy": { "timeout": "00:10:00" },
+        "typeProperties": {
+          "source": {
+            "type": "DelimitedTextSource",
+            "storeSettings": { "type": "AzureBlobFSReadSettings" },
+            "formatSettings": { "type": "DelimitedTextReadSettings", "firstRowAsHeader": false }
+          },
+          "dataset": { "referenceName": "ThresholdFile", "type": "DatasetReference" }
+        }
+      },
+      {
+        "name": "GetCustomerCount",
+        "type": "Lookup",
+        "dependsOn": [{ "activity": "LookupThreshold", "dependencyConditions": ["Succeeded"] }],
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT COUNT(*) AS RecordCount FROM dbo.Customer"
+          },
+          "dataset": { "referenceName": "SqlCustomerDataset", "type": "DatasetReference" }
+        }
+      },
+      {
+        "name": "IfThresholdExceeded",
+        "type": "IfCondition",
+        "dependsOn": [{ "activity": "GetCustomerCount", "dependencyConditions": ["Succeeded"] }],
+        "typeProperties": {
+          "expression": {
+            "value": "@greater(activity('GetCustomerCount').output.firstRow.RecordCount, activity('LookupThreshold').output.firstRow.Column1)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CopyCustomerToAdls",
+              "type": "Copy",
+              "typeProperties": {
+                "source": { "type": "SqlSource", "sqlReaderQuery": "SELECT * FROM dbo.Customer" },
+                "sink": {
+                  "type": "JsonSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSSinkSettings",
+                    "folderPath": "Customer/@{formatDateTime(utcNow(),'yyyy/MM/dd')}/"
+                  },
+                  "formatSettings": { "type": "JsonWriteSettings", "filePattern": "setOfObjects" }
+                }
+              },
+              "inputs": [{ "referenceName": "SqlCustomerDataset", "type": "DatasetReference" }],
+              "outputs": [{ "referenceName": "AdlsJsonDataset", "type": "DatasetReference" }]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
