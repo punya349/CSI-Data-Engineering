@@ -1,0 +1,14 @@
+{
+  "name": "Pipeline_Join_Parquet",
+  "properties": {
+    "activities": [
+      {
+        "name": "MappingDataFlow",
+        "type": "ExecuteDataFlow",
+        "typeProperties": {
+          "dataflow": { "referenceName": "JoinCustomerFlow", "type": "DataFlowReference" }
+        }
+      }
+    ]
+  }
+}
