@@ -1,0 +1,27 @@
+{
+  "name": "Foreach_Example2",
+  "properties": {
+    "activities": [
+      {
+        "name": "UnifiedCopy",
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT ProductID AS ID, Name, 'Product' AS SourceType FROM dbo.Product WHERE ProductID > 100 UNION ALL SELECT CustomerID AS ID, Name, 'Customer' AS SourceType FROM dbo.Customer WHERE CustomerID > 100 AND CustomerID < 1000"
+          },
+          "sink": {
+            "type": "JsonSink",
+            "formatSettings": { "type": "JsonWriteSettings", "filePattern": "setOfObjects" },
+            "storeSettings": {
+              "type": "AzureBlobFSSinkSettings",
+              "folderPath": "Unified/Run_@{formatDateTime(utcNow(),'yyyyMMdd_HHmmss')}/"
+            }
+          }
+        },
+        "inputs": [{ "referenceName": "SqlUnifiedDataset", "type": "DatasetReference" }],
+        "outputs": [{ "referenceName": "AdlsUnifiedDataset", "type": "DatasetReference" }]
+      }
+    ]
+  }
+}
